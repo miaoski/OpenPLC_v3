@@ -41,6 +41,17 @@ void updateCustomIn()
     // you must add %IW3 to the ignored vectors above, and then just insert this 
     // single line of code in this function:
     //     if (int_input[3] != NULL) *int_input[3] = 53;
+	FILE *fp;
+	char buf[10];
+	fp = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
+	if(fp != NULL) {
+		fgets(buf, sizeof(buf), fp);		// 39546 = 39.546 C
+		buf[3] = '\0';
+		fclose(fp);
+		*int_input[0] = atoi(buf);
+	} else {
+		*int_input[0] = 420;
+	}
 }
 
 //-----------------------------------------------------------------------------
