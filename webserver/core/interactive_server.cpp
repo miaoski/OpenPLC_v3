@@ -38,6 +38,7 @@
 #include "ladder.h"
 
 //Global Variables
+bool run_modbus_rtu = 0;
 bool run_modbus = 0;
 uint16_t modbus_port = 502;
 bool run_dnp3 = 0;
@@ -53,14 +54,28 @@ time_t start_time;
 time_t end_time;
 
 //Global Threads
+pthread_t modbus_rtu_thread;
 pthread_t modbus_thread;
 pthread_t dnp3_thread;
 pthread_t enip_thread;
 pthread_t pstorage_thread;
 
 //-----------------------------------------------------------------------------
+// Start the Modbus RTU Thread
+//-----------------------------------------------------------------------------
+void *modbusRTUThread(void *arg)
+{
+    modbusRtuStartServer();
+}
+
+//-----------------------------------------------------------------------------
 // Start the Modbus Thread
 //-----------------------------------------------------------------------------
+void *modbusRTUThread(void *arg)
+{
+    modbusRTUStartServer();
+}
+
 void *modbusThread(void *arg)
 {
     startServer(modbus_port, MODBUS_PROTOCOL);
@@ -218,6 +233,13 @@ void processCommand(unsigned char *buffer, int client_fd)
         processing_command = true;
         sprintf(log_msg, "Issued quit() command\n");
         log(log_msg);
+        if (run_modbus_rtu)
+        {
+            run_modbus_rtu = 0;
+            pthread_join(modbus_rtu_thread, NULL);
+            sprintf(log_msg, "Modbus RTU server was stopped\n");
+            log(log_msg);
+        }
         if (run_modbus)
         {
             run_modbus = 0;
@@ -252,7 +274,9 @@ void processCommand(unsigned char *buffer, int client_fd)
             log(log_msg);
         }
         //Start Modbus server
+        run_modbus_rtu = 1;
         run_modbus = 1;
+        pthread_create(&modbus_rtu_thread, NULL, modbusRTUThread, NULL);
         pthread_create(&modbus_thread, NULL, modbusThread, NULL);
         processing_command = false;
     }
@@ -261,6 +285,13 @@ void processCommand(unsigned char *buffer, int client_fd)
         processing_command = true;
         sprintf(log_msg, "Issued stop_modbus() command\n");
         log(log_msg);
+        if (run_modbus_rtu)
+        {
+            run_modbus_rtu = 0;
+            pthread_join(modbus_rtu_thread, NULL);
+            sprintf(log_msg, "Modbus RTU server was stopped\n");
+            log(log_msg);
+        }
         if (run_modbus)
         {
             run_modbus = 0;
@@ -494,10 +525,12 @@ void startInteractiveServer(int port)
     }
     
     printf("Shutting down internal threads\n");
+    run_modbus_rtu = 0;
     run_modbus = 0;
     run_dnp3 = 0;
     run_enip = 0;
     run_pstorage = 0;
+    pthread_join(modbus_rtu_thread, NULL);
     pthread_join(modbus_thread, NULL);
     pthread_join(dnp3_thread, NULL);
     pthread_join(enip_thread, NULL);

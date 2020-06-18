@@ -29,6 +29,7 @@
 #define MODBUS_PROTOCOL     0
 #define DNP3_PROTOCOL       1
 #define ENIP_PROTOCOL       2
+#define MODBUS_RTU_PROTOCOL 3
 
 //Internal buffers for I/O and memory. These buffers are defined in the
 //auto-generated glueVars.cpp file
@@ -120,6 +121,9 @@ extern unsigned char log_buffer[1000000];
 extern int log_index;
 void handleSpecialFunctions();
 
+//modbusrtu.cpp
+void modbusRtuStartServer();
+
 //server.cpp
 void startServer(uint16_t port, int protocol_type);
 int getSO_ERROR(int fd);
@@ -128,6 +132,7 @@ bool SetSocketBlockingEnabled(int fd, bool blocking);
 
 //interactive_server.cpp
 void startInteractiveServer(int port);
+extern bool run_modbus_rtu;
 extern bool run_modbus;
 extern bool run_dnp3;
 extern bool run_enip;

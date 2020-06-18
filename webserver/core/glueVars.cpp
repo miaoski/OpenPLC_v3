@@ -48,6 +48,9 @@ IEC_UINT *int_memory[BUFFER_SIZE];
 IEC_DINT *dint_memory[BUFFER_SIZE];
 IEC_LINT *lint_memory[BUFFER_SIZE];
 
+//Special Functions
+IEC_LINT *special_functions[BUFFER_SIZE];
+
 
 #define __LOCATED_VAR(type, name, ...) type __##name;
 #include "LOCATED_VARIABLES.h"
@@ -58,6 +61,11 @@ IEC_LINT *lint_memory[BUFFER_SIZE];
 
 void glueVars()
 {
+	bool_input[0][0] = __IX0_0;
+	bool_output[0][0] = __QX0_0;
+	bool_output[0][1] = __QX0_1;
+	int_input[0] = __IW0;
+	int_memory[0] = __MW0;
 }
 
 void updateTime()
