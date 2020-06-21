@@ -24,6 +24,8 @@
 #define STOP_BITS 1
 #define USB_DEV "/dev/ttyUSB0"
 
+#define NET_BUFFER_SIZE 1024
+
 //-----------------------------------------------------------------------------
 // Function to start the server.
 //-----------------------------------------------------------------------------
@@ -31,15 +33,11 @@ void modbusRTUStartServer()
 {
     unsigned char log_msg[1000];
     int reqlen, msglen;
-    bool *run_server = &run_modbus_rtu;
     modbus_t *mb_rtu;
-    struct {
-        uint16_t tx_id = 0;
-        uint16_t prot_id = 0;
-        uint8_t msglen_h = 0;
-        uint8_t msglen_l = 0;
-        uint8_t req[NET_BUFFER_SIZE];
-    } msg_t;
+    uint8_t buffer[NET_BUFFER_SIZE + 6];	// TCP header: tx ID, prot ID, length = 6 bytes
+
+    sprintf(log_msg, "Initiating Modbus/RTU Server.\n");
+    log(log_msg);
     
     mb_rtu = modbus_new_rtu(USB_DEV, BAUDRATE, PARITY, SERIAL_BITS, STOP_BITS);
     if(mb_rtu == NULL) {
@@ -48,7 +46,7 @@ void modbusRTUStartServer()
             return;
     }
     
-    while(*run_server)              // only 1 client for RTU
+    while(run_modbus_rtu)
     {
         modbus_set_slave(mb_rtu, MODBUS_RTU_SLAVE);
         if(modbus_connect(mb_rtu) == -1) {
@@ -56,7 +54,7 @@ void modbusRTUStartServer()
             log(log_msg);
             break;
         }
-        reqlen = modbus_receive(mb_rtu, &msg_t.req);
+        reqlen = modbus_receive(mb_rtu, &buffer[6]);
         sprintf(log_msg, "RTU Server: RTU connection failed: %s\n", modbus_strerror(errno));
         log(log_msg);
         if(reqlen == -1) {
@@ -68,14 +66,18 @@ void modbusRTUStartServer()
             // request to another RTU Slave.  Ignore it.
         } else {
             sprintf(log_msg, "Recv (len=%d): %02x %02x %02x %02x %02x %02x\n", reqlen, 
-                    msg_t.req[0], msg_t.req[1], msg_t.req[2], msg_t.req[3], msg_t.req[4], msg_t.req[5]);
+                    buffer[6], buffer[7], buffer[8], buffer[9], buffer[10], buffer[11]);
             log(log_msg);
             // padding to Modbus TCP and process
-            reqlen = reqlen - 2;                                        // -CRC
-            msg_t.msglen_h = reqlen / 256;
-            msg_t.msglen_l = reqlen % 256;
-            msglen = processModbusMessage(&msg_t, reqlen + 6 - 2);     // + TCP Header - CRC
-            reqlen = modbus_send_raw_request(mb_rtu, &msg_t.req, msg_t.msglen_h * 256 + msg_t.msglen_l);
+	    buffer[0] = 0;				// Transaction ID
+	    buffer[1] = 0;
+	    buffer[2] = 0;				// Protocol ID
+	    buffer[3] = 0;
+            reqlen = reqlen - 2;                        // -CRC
+            buffer[4] = reqlen / 256;
+            buffer[5] = reqlen % 256;
+            msglen = processModbusMessage(buffer, reqlen + 6 - 2);     // + TCP Header - CRC
+            reqlen = modbus_send_raw_request(mb_rtu, &buffer[6], buffer[4] * 256 + buffer[5]);
             if(reqlen == -1) {
                 sprintf(log_msg, "RTU Server: Error responding to Modbus/RTU: %s\n", modbus_strerror(errno));
                 log(log_msg);

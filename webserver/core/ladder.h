@@ -122,7 +122,7 @@ extern int log_index;
 void handleSpecialFunctions();
 
 //modbusrtu.cpp
-void modbusRtuStartServer();
+void modbusRTUStartServer();
 
 //server.cpp
 void startServer(uint16_t port, int protocol_type);
