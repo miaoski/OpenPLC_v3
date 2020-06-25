@@ -34,7 +34,9 @@ void modbusRTUStartServer()
     unsigned char log_msg[1000];
     int reqlen, msglen;
     modbus_t *mb_rtu;
-    uint8_t buffer[NET_BUFFER_SIZE + 6];	// TCP header: tx ID, prot ID, length = 6 bytes
+    uint8_t buffer[NET_BUFFER_SIZE + 6];       // TCP header: tx ID, prot ID, length = 6 bytes
+    unsigned char *p;
+    unsigned char *eop = &log_msg + sizeof(log_msg) - 2;    // end of log_msg w/o \n\0
 
     sprintf(log_msg, "Initiating Modbus/RTU Server.\n");
     log(log_msg);
@@ -55,8 +57,6 @@ void modbusRTUStartServer()
             break;
         }
         reqlen = modbus_receive(mb_rtu, &buffer[6]);
-        sprintf(log_msg, "RTU Server: RTU connection failed: %s\n", modbus_strerror(errno));
-        log(log_msg);
         if(reqlen == -1) {
             sprintf(log_msg, "RTU Server: Error receiving Modbus/RTU: %s\n", modbus_strerror(errno));
             log(log_msg);
@@ -65,14 +65,19 @@ void modbusRTUStartServer()
         if(reqlen == 0) {
             // request to another RTU Slave.  Ignore it.
         } else {
-            sprintf(log_msg, "Recv (len=%d): %02x %02x %02x %02x %02x %02x\n", reqlen, 
-                    buffer[6], buffer[7], buffer[8], buffer[9], buffer[10], buffer[11]);
+            sprintf(log_msg, "Recv (len=%d):", reqlen);
+            for(i = 6; p = &log_msg + strlen(log_msg); p < eop; i++) {
+                sprintf(p, " %02x", buffer[i]);
+                p += 3;
+            }
+            *p++ = '\n';
+            *p++ = '\0';
             log(log_msg);
             // padding to Modbus TCP and process
-	    buffer[0] = 0;				// Transaction ID
-	    buffer[1] = 0;
-	    buffer[2] = 0;				// Protocol ID
-	    buffer[3] = 0;
+            buffer[0] = 0;              // Transaction ID
+            buffer[1] = 0;
+            buffer[2] = 0;              // Protocol ID
+            buffer[3] = 0;
             reqlen = reqlen - 2;                        // -CRC
             buffer[4] = reqlen / 256;
             buffer[5] = reqlen % 256;
