@@ -66,14 +66,16 @@ void modbusRTUStartServer()
         if(reqlen == 0) {
             // request to another RTU Slave.  Ignore it.
         } else {
-            sprintf(log_msg, "Recv (len=%d):", reqlen);
-            for(i = 0, p = log_msg + strlen(log_msg); p < eop && i < reqlen; i++) {
-                sprintf(p, " %02x", buffer[i + 6]);
-                p += 3;
+            if(buffer[7] > 0x04) {          // We don't want to log readings
+                sprintf(log_msg, "Recv (len=%d):", reqlen);
+                for(i = 0, p = log_msg + strlen(log_msg); p < eop && i < reqlen; i++) {
+                    sprintf(p, " %02x", buffer[i + 6]);
+                    p += 3;
+                }
+                *p++ = '\n';
+                *p++ = '\0';
+                log(log_msg);
             }
-            *p++ = '\n';
-            *p++ = '\0';
-            log(log_msg);
             // padding to Modbus TCP and process
             buffer[0] = 0;              // Transaction ID
             buffer[1] = 0;
