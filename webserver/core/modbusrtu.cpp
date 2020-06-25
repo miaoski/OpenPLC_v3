@@ -82,7 +82,7 @@ void modbusRTUStartServer()
             reqlen = reqlen - 2;                        // -CRC
             buffer[4] = reqlen / 256;
             buffer[5] = reqlen % 256;
-            msglen = processModbusMessage(buffer, reqlen + 6 - 2);     // + TCP Header - CRC
+            msglen = processModbusMessage(buffer, reqlen + 6);     	// + TCP Header
             reqlen = modbus_send_raw_request(mb_rtu, &buffer[6], buffer[4] * 256 + buffer[5]);
             if(reqlen == -1) {
                 sprintf(log_msg, "RTU Server: Error responding to Modbus/RTU: %s\n", modbus_strerror(errno));
