@@ -67,8 +67,8 @@ void modbusRTUStartServer()
             // request to another RTU Slave.  Ignore it.
         } else {
             sprintf(log_msg, "Recv (len=%d):", reqlen);
-            for(i = 6, p = log_msg + strlen(log_msg); p < eop; i++) {
-                sprintf(p, " %02x", buffer[i]);
+            for(i = 0, p = log_msg + strlen(log_msg); p < eop && i < reqlen; i++) {
+                sprintf(p, " %02x", buffer[i + 6]);
                 p += 3;
             }
             *p++ = '\n';
