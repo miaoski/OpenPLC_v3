@@ -39,7 +39,13 @@ void modbusRTUStartServer()
     unsigned char *eop = log_msg + sizeof(log_msg) - 2;    // end of log_msg w/o \n\0
     int i;
 
-    sprintf(log_msg, "Initiating Modbus/RTU Server.\n");
+    if(access(USB_DEV, F_OK) == -1) {
+        sprintf(log_msg, "RTU Server: No ttyUSB0.  Terminating thread.\n");
+        log(log_msg);
+        return;
+    }
+
+    sprintf(log_msg, "RTU Server: Initiating Modbus/RTU Server.\n");
     log(log_msg);
     
     mb_rtu = modbus_new_rtu(USB_DEV, BAUDRATE, PARITY, SERIAL_BITS, STOP_BITS);
