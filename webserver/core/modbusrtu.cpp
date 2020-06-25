@@ -55,13 +55,13 @@ void modbusRTUStartServer()
         if(modbus_connect(mb_rtu) == -1) {
             sprintf(log_msg, "RTU Server: RTU connection failed: %s\n", modbus_strerror(errno));
             log(log_msg);
-            break;
+	    continue;
         }
         reqlen = modbus_receive(mb_rtu, &buffer[6]);
         if(reqlen == -1) {
             sprintf(log_msg, "RTU Server: Error receiving Modbus/RTU: %s\n", modbus_strerror(errno));
             log(log_msg);
-            break;
+	    continue;
         }
         if(reqlen == 0) {
             // request to another RTU Slave.  Ignore it.
